@@ -9,7 +9,7 @@ function preload() {
 function setup() {
   var canvas = createCanvas(windowWidth, windowHeight);
   imageMode(CENTER);
-  game = new BurgTown(10);
+  game = new BurgTown(30);
 }
 
 function draw() {
@@ -17,7 +17,7 @@ function draw() {
 }
 
 const DAYS_ARRAY = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-const GAME_STATES = { NOT_STARTED: 0, STARTED: 1, OVER: 2 };
+const GAME_STATES = { NOT_STARTED: 0, STARTED: 1, OVER: 2 , END_SCREEN: 3};
 
 class BurgTown {
 
@@ -34,6 +34,7 @@ class BurgTown {
     this.name = "";
     this.day = new Date().getDay();
     this.state = GAME_STATES.NOT_STARTED;
+    this.scores = [];
   }
 
   addPatty(x, y){
@@ -54,6 +55,10 @@ class BurgTown {
         this.state = GAME_STATES.OVER;
         break;
       case GAME_STATES.OVER:
+        this.state = GAME_STATES.END_SCREEN;
+        submit(this.name, this.personalHighscore, this);
+        break;
+      case GAME_STATES.END_SCREEN:
         this.state = GAME_STATES.NOT_STARTED;
         this.countdown = '';
         this.patties = [];
@@ -98,8 +103,10 @@ class BurgTown {
         this._displayGame();
         break;
       case GAME_STATES.OVER:
-        this._displayEndScreen();
+        this._displayNameInputScreen();
         break;
+      case GAME_STATES.END_SCREEN:
+        this._displayScores();
       default:
         console.log('how tho');
     }
@@ -128,12 +135,35 @@ class BurgTown {
     text(this.countdown, width / 2, height / 2);
   }
 
-  _displayEndScreen(){
+  _displayNameInputScreen(){
     this._displayPatties();
     textSize(width / 10);
     text('Enter your initials:', width / 2, height * 0.3);
     textSize(width / 8);
     text(this.name, width / 2, height * 0.6);
+  }
+
+  _displayScores(){
+    this._displayPatties();
+    let headerTopPadding = height * 0.2;
+    let headerTextSize = height * 0.1;
+    let headerBottomPadding = height * 0.05;
+    let scorePadding = height * 0.06;
+    let scoreTextSize = (height * 0.6 * 0.1);
+    textSize(headerTextSize);
+    text('Highscores', width / 2, headerTopPadding);
+
+    textSize(scoreTextSize);
+    let scoreOffset = headerTopPadding + headerTextSize + headerBottomPadding;
+
+    if(!Array.isArray(this.scores)){
+      text('loading...', width/2, scoreOffset);
+      return;
+    }
+
+    this.scores.forEach((obj, i)=>{
+      text(`${obj.name} - ${obj.score}`, width/2, (i * scorePadding) + scoreOffset);
+    });
   }
 
   _displayPatties(){
@@ -148,6 +178,7 @@ class BurgTown {
       pop(); //p5
     });
   }
+
 
   _startTimer() {
     let time = this.duration
@@ -267,14 +298,14 @@ class patty{
 
 function keyPressed() {
   console.log(keyCode);
-  if (game.state === GAME_STATES.OVER) {
+  if (game.state >= GAME_STATES.OVER) {
     if (game.name.length > 0 && (keyCode === DELETE || keyCode === BACKSPACE)) {
       game.name = game.name.slice(0, -1);
     }else if (keyCode === ENTER || keyCode === RETURN) {
       game.next();
-    }else if (game.name.lenth < 3 && 
-            (keyCode > 97 && keyCode < 122) ||
-            (keyCode > 65 && keyCode < 90) ){
+    }else if (game.name.length < 3 && 
+            ((keyCode > 97 && keyCode < 122) ||
+            (keyCode > 65 && keyCode < 90)) ){
       game.name += String.fromCharCode(keyCode).toUpperCase();
     }
   }
@@ -289,4 +320,27 @@ function mouseClicked() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+}
+
+//service calls 
+function submit(name, score, game){
+  postAjax('/scores/submit', {name:name, score:score}, (data)=>{
+    return game.scores = JSON.parse(data);
+  });
+}
+
+function postAjax(url, data, success) {
+    var params = typeof data == 'string' ? data : Object.keys(data).map(
+            function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]) }
+        ).join('&');
+
+    var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+    xhr.open('POST', url);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState>3 && xhr.status==200) { success(xhr.responseText); }
+    };
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.send(params);
+    return xhr;
 }
