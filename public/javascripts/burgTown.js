@@ -1,19 +1,47 @@
+import p5 from './p5.min.js';
+new p5();
+
 var pattyImg, explodeImg;
 var game;
 
-function preload() {
+window.preload = () =>{
   pattyImg = loadImage("/images/patty.png");
   explodeImg = loadImage("/images/explode.png");
 }
 
-function setup() {
+window.setup = () =>{
   var canvas = createCanvas(windowWidth, windowHeight);
   imageMode(CENTER);
   game = new BurgTown(30);
 }
 
-function draw() {
+window.draw = ()=> {
   game.display();
+}
+
+window.keyPressed = ()=> {
+  if (game.state >= GAME_STATES.OVER) {
+    if (game.name.length > 0 && (keyCode === DELETE || keyCode === BACKSPACE)) {
+      game.name = game.name.slice(0, -1);
+    }else if (keyCode === ENTER || keyCode === RETURN) {
+      game.next();
+    }else if (game.name.length < 3 && 
+            ((keyCode > 97 && keyCode < 122) ||
+            (keyCode > 65 && keyCode < 90)) ){
+      game.name += String.fromCharCode(keyCode).toUpperCase();
+    }
+  }
+}
+
+window.mouseClicked = ()=> {
+  if(game.state === GAME_STATES.NOT_STARTED){
+    game.next();
+  }
+  game.addPatty(mouseX, mouseY)
+}
+
+window.windowResized= () =>{
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 const DAYS_ARRAY = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -107,6 +135,7 @@ class BurgTown {
         break;
       case GAME_STATES.END_SCREEN:
         this._displayScores();
+        break;
       default:
         console.log('how tho');
     }
@@ -123,6 +152,7 @@ class BurgTown {
 
   //Private functions
   _displayStartScreen(){
+    textSize(width/10);
     if (this.titleFlip) {
       text('HAPPY ' + DAYS_ARRAY[this.day], width / 2, height / 2);
     } else {
@@ -294,33 +324,7 @@ class patty{
   }
 }
 
-//########## P5 Event Listeners ##########
 
-function keyPressed() {
-  console.log(keyCode);
-  if (game.state >= GAME_STATES.OVER) {
-    if (game.name.length > 0 && (keyCode === DELETE || keyCode === BACKSPACE)) {
-      game.name = game.name.slice(0, -1);
-    }else if (keyCode === ENTER || keyCode === RETURN) {
-      game.next();
-    }else if (game.name.length < 3 && 
-            ((keyCode > 97 && keyCode < 122) ||
-            (keyCode > 65 && keyCode < 90)) ){
-      game.name += String.fromCharCode(keyCode).toUpperCase();
-    }
-  }
-}
-
-function mouseClicked() {
-  if(game.state === GAME_STATES.NOT_STARTED){
-    game.next();
-  }
-  game.addPatty(mouseX, mouseY)
-}
-
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-}
 
 //service calls 
 function submit(name, score, game){
