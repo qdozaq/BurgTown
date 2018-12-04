@@ -26,8 +26,8 @@ window.keyPressed = ()=> {
     }else if (keyCode === ENTER || keyCode === RETURN) {
       game.next();
     }else if (game.name.length < 3 && 
-            ((keyCode > 97 && keyCode < 122) ||
-            (keyCode > 65 && keyCode < 90)) ){
+            ((keyCode >= 97 && keyCode <= 122) ||
+            (keyCode >= 65 && keyCode <= 90)) ){
       game.name += String.fromCharCode(keyCode).toUpperCase();
     }
   }
