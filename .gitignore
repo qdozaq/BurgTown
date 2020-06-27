@@ -64,3 +64,5 @@ typings/
 .config.fish*
 
 dist/
+.vercel
+.DS_Store
