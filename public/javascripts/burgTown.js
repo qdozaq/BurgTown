@@ -100,6 +100,7 @@ class BurgTown {
         this.state = GAME_STATES.NOT_STARTED;
         this.countdown = "";
         this.patties = [];
+        this.personalHighscore = 0;
         this.day = new Date().getDay();
         break;
       default:
